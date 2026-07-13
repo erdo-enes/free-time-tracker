@@ -1,0 +1,57 @@
+# Dependencies
+frontend/node_modules/
+backend/__pycache__/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Database
+backend/*.db
+backend/*.db-journal
+
+# Environment
+.env
+backend/.env
+*.env.local
+
+# Next.js build artifacts
+frontend/.next/
+frontend/out/
+
+# Next.js cache
+frontend/.cache/
+
+# Node
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Switch collector build artifacts
+switch-collector/build/
+switch-collector/*.nro
+switch-collector/*.elf
+switch-collector/*.nacp
+*.o
+*.a

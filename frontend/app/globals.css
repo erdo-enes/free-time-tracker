@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #F4F5F7;
+  color: #172B4D;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #C1C7D0;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #97A0AF;
+}
+
+@layer components {
+  .jira-input {
+    @apply bg-white border border-jira-border rounded px-3 py-2 text-sm text-jira-text placeholder-jira-textLight focus:outline-none focus:border-jira-blue focus:ring-2 focus:ring-jira-blue/20 transition-all;
+  }
+  .jira-select {
+    @apply bg-white border border-jira-border rounded px-3 py-2 text-sm text-jira-text focus:outline-none focus:border-jira-blue transition-all cursor-pointer;
+  }
+  .jira-btn-primary {
+    @apply bg-jira-blue hover:bg-jira-blueDark text-white px-4 py-2 rounded text-sm font-medium transition-colors shadow-card;
+  }
+  .jira-btn-secondary {
+    @apply bg-white hover:bg-jira-hover text-jira-textSub border border-jira-border px-4 py-2 rounded text-sm font-medium transition-colors;
+  }
+  .jira-btn-danger {
+    @apply bg-jira-red hover:bg-jira-red/80 text-white px-4 py-2 rounded text-sm font-medium transition-colors;
+  }
+  .jira-card {
+    @apply bg-white border border-jira-border rounded-lg shadow-card;
+  }
+  .jira-panel {
+    @apply bg-white border border-jira-border rounded-lg;
+  }
+}

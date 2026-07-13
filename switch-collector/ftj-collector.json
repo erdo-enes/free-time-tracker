@@ -1,0 +1,20 @@
+{
+    "name": "ftj-switch-collector",
+    "version": "1.0.0",
+    "description": "Ultra-lightweight background game session reporter for CFW Nintendo Switch",
+    "license": "MIT",
+    "platform": "switch",
+    "title": "FreeTime Jira Collector",
+    "author": "FreeTime Jira",
+    "build": {
+        "targets": [
+            {
+                "name": "ftj-collector",
+                "type": "nro",
+                "categories": ["system_module"],
+                "icon": "icon.jpg",
+                "nacp": "ftj-collector.nacp"
+            }
+        ]
+    }
+}

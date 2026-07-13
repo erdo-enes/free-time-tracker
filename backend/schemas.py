@@ -1,0 +1,132 @@
+from pydantic import BaseModel, ConfigDict
+from datetime import datetime
+from typing import Optional, Any
+from models import TaskStatus, TaskPriority, IssueType, EntryType, Platform, AccountPlatform
+
+
+class CategoryBase(BaseModel):
+    name: str
+    color: str = "#6366f1"
+    is_default: bool = False
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class CategoryOut(CategoryBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TaskBase(BaseModel):
+    title: str
+    description: str = ""
+    status: TaskStatus = TaskStatus.backlog
+    priority: TaskPriority = TaskPriority.medium
+    issue_type: IssueType = IssueType.task
+    category_id: Optional[int] = None
+    parent_task_id: Optional[int] = None
+    story_points: Optional[int] = None
+    due_date: Optional[datetime] = None
+
+
+class TaskCreate(TaskBase):
+    pass
+
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[TaskStatus] = None
+    priority: Optional[TaskPriority] = None
+    issue_type: Optional[IssueType] = None
+    category_id: Optional[int] = None
+    parent_task_id: Optional[int] = None
+    story_points: Optional[int] = None
+    due_date: Optional[datetime] = None
+    order: Optional[int] = None
+
+
+class TaskOut(TaskBase):
+    id: int
+    order: int
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TimeEntryBase(BaseModel):
+    task_id: Optional[int] = None
+    category_id: Optional[int] = None
+    title: str
+    entry_type: EntryType = EntryType.manual
+    platform: Platform = Platform.manual
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    duration_minutes: Optional[float] = None
+    metadata_json: Optional[dict[str, Any]] = None
+
+
+class TimeEntryCreate(TimeEntryBase):
+    pass
+
+
+class TimeEntryUpdate(BaseModel):
+    task_id: Optional[int] = None
+    category_id: Optional[int] = None
+    title: Optional[str] = None
+    entry_type: Optional[EntryType] = None
+    platform: Optional[Platform] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    duration_minutes: Optional[float] = None
+    metadata_json: Optional[dict[str, Any]] = None
+
+
+class TimeEntryOut(TimeEntryBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GamingSessionOut(BaseModel):
+    id: int
+    platform: Platform
+    game_name: str
+    game_id: Optional[str]
+    account_username: Optional[str]
+    started_at: datetime
+    ended_at: Optional[datetime]
+    duration_minutes: float
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SwitchIngestPayload(BaseModel):
+    game_name: str
+    game_id: Optional[str] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    device_name: Optional[str] = None
+
+
+class WatchedAccountBase(BaseModel):
+    platform: AccountPlatform
+    username: str
+    display_name: Optional[str] = None
+
+
+class WatchedAccountCreate(WatchedAccountBase):
+    pass
+
+
+class WatchedAccountOut(WatchedAccountBase):
+    id: int
+    platform_account_id: Optional[str]
+    is_active: bool
+    last_checked: Optional[datetime]
+    last_status: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
