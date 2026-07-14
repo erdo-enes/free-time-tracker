@@ -67,6 +67,7 @@ export function TopBar() {
 
   const handleSearchInput = (value: string) => {
     setSearchQuery(value);
+    setOpenDropdown("search");
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => doSearch(value), 250);
   };
@@ -149,7 +150,7 @@ export function TopBar() {
             value={searchQuery}
             onChange={(e) => handleSearchInput(e.target.value)}
             onKeyDown={handleSearchKey}
-            onFocus={() => searchResults && setOpenDropdown("search")}
+            onFocus={() => setOpenDropdown("search")}
             placeholder="Search issues, time entries..."
             className="w-full bg-jira-surface border border-jira-border rounded pl-9 pr-8 py-1.5 text-sm text-jira-text placeholder-jira-textLight focus:outline-none focus:border-jira-blue focus:bg-white transition-all"
           />
@@ -162,41 +163,41 @@ export function TopBar() {
         </div>
 
         {/* Search results dropdown */}
-        {openDropdown === "search" && searchQuery && (
+        {openDropdown === "search" && searchQuery.trim() && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-jira-border rounded-lg shadow-dropdown max-h-96 overflow-auto z-50">
             {searchLoading ? (
               <div className="px-4 py-6 text-center text-sm text-jira-textMuted">Searching...</div>
             ) : searchResults && (searchResults.tasks.length > 0 || searchResults.entries.length > 0) ? (
               <div className="py-1.5">
                 {searchResults.tasks.length > 0 && (
-              <>
-                <div className="px-3 py-1 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider">Issues</div>
-                {searchResults.tasks.map((t) => (
-                  <button key={t.id} onClick={() => { handleNavigate("/"); setOpenDropdown(null); setSearchQuery(""); setSearchResults(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-jira-hover transition-colors text-left">
-                    <span className="text-[10px] text-jira-textMuted font-mono w-14">FTJ-{t.id}</span>
-                    <span className="text-sm text-jira-text flex-1 truncate">{t.title}</span>
-                    <span className="text-[10px] text-jira-textMuted capitalize">{t.status.replace("_", " ")}</span>
-                  </button>
-                ))}
-              </>
-            )}
-            {searchResults.entries.length > 0 && (
-              <>
-                <div className="px-3 py-1 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider border-t border-jira-border mt-1 pt-2">Time Entries</div>
-                {searchResults.entries.map((e) => (
-                  <button key={e.id} onClick={() => { handleNavigate("/time"); setOpenDropdown(null); setSearchQuery(""); setSearchResults(null); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-jira-hover transition-colors text-left">
-                    <Clock size={12} className="text-jira-textMuted flex-shrink-0" />
-                    <span className="text-sm text-jira-text flex-1 truncate">{e.title}</span>
-                    <span className="text-[10px] text-jira-textMuted font-mono">{formatMinutes(e.duration_minutes)}</span>
-                  </button>
-                ))}
-              </>
-            )}
+                  <>
+                    <div className="px-3 py-1 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider">Issues</div>
+                    {searchResults.tasks.map((t) => (
+                      <button key={t.id} onClick={() => { handleNavigate("/"); setSearchQuery(""); setSearchResults(null); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-jira-hover transition-colors text-left">
+                        <span className="text-[10px] text-jira-textMuted font-mono w-14">FTJ-{t.id}</span>
+                        <span className="text-sm text-jira-text flex-1 truncate">{t.title}</span>
+                        <span className="text-[10px] text-jira-textMuted capitalize">{t.status.replace("_", " ")}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {searchResults.entries.length > 0 && (
+                  <>
+                    <div className="px-3 py-1 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider border-t border-jira-border mt-1 pt-2">Time Entries</div>
+                    {searchResults.entries.map((e) => (
+                      <button key={e.id} onClick={() => { handleNavigate("/time"); setSearchQuery(""); setSearchResults(null); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-jira-hover transition-colors text-left">
+                        <Clock size={12} className="text-jira-textMuted flex-shrink-0" />
+                        <span className="text-sm text-jira-text flex-1 truncate">{e.title}</span>
+                        <span className="text-[10px] text-jira-textMuted font-mono">{formatMinutes(e.duration_minutes)}</span>
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             ) : (
-              <div className="px-4 py-6 text-center text-sm text-jira-textMuted">No results for &quot;{searchQuery}&quot;</div>
+              !searchLoading && <div className="px-4 py-6 text-center text-sm text-jira-textMuted">No results for &quot;{searchQuery}&quot;</div>
             )}
           </div>
         )}
