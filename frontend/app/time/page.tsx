@@ -319,11 +319,11 @@ export default function TimeTrackerPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3">
-          <StatBox label="This Week" value={formatMinutes(totalMinutes)} icon={<Clock size={16} />} color="#2684FF" />
-          <StatBox label="Today" value={formatMinutes(todayMinutes)} icon={<Calendar size={16} />} color="#36B37E" />
-          <StatBox label="Entries" value={filteredEntries.length.toString()} icon={<TrendingUp size={16} />} color="#6554E0" />
-          <StatBox label="Avg / Day" value={formatMinutes(totalMinutes / 7)} icon={<TrendingUp size={16} />} color="#E97F0F" />
+        <div className="grid grid-cols-4 gap-4">
+          <StatBox label="This Week" value={formatMinutes(totalMinutes)} icon={<Clock size={18} />} color="#0052CC" bg="#DEEBFF" />
+          <StatBox label="Today" value={formatMinutes(todayMinutes)} icon={<Calendar size={18} />} color="#36B37E" bg="#E3FCEF" />
+          <StatBox label="Entries" value={filteredEntries.length.toString()} icon={<TrendingUp size={18} />} color="#6554E0" bg="#EAE6FF" />
+          <StatBox label="Avg / Day" value={formatMinutes(totalMinutes / 7)} icon={<TrendingUp size={18} />} color="#FFAB00" bg="#FFFAE6" />
         </div>
 
         {/* Add entry panel with mode tabs */}
@@ -577,14 +577,16 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
-function StatBox({ label, value, icon, color }: { label: string; value: string; icon: React.ReactNode; color: string }) {
+function StatBox({ label, value, icon, color, bg }: { label: string; value: string; icon: React.ReactNode; color: string; bg: string }) {
   return (
     <div className="jira-card p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span style={{ color }}>{icon}</span>
-        <span className="text-xs text-jira-textMuted">{label}</span>
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+          <span style={{ color }}>{icon}</span>
+        </div>
       </div>
       <div className="text-xl font-bold text-jira-text">{value}</div>
+      <div className="text-xs text-jira-textMuted mt-0.5">{label}</div>
     </div>
   );
 }

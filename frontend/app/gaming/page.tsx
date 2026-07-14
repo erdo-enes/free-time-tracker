@@ -58,9 +58,9 @@ export default function GamingPage() {
         {activeSessions.length > 0 && (
           <div className="space-y-2">
             {activeSessions.map((s) => {
-              const meta = PLATFORM_META[s.platform] || { label: s.platform, color: "#36B37E" };
+              const meta = PLATFORM_META[s.platform] || { label: s.platform, color: "#36B37E", bg: "#E3FCEF" };
               return (
-                <div key={s.id} className="jira-card p-4 border-jira-green/30 flex items-center gap-4" style={{ background: "linear-gradient(90deg, rgba(54,179,126,0.08), transparent)" }}>
+                <div key={s.id} className="jira-card p-4 flex items-center gap-4" style={{ background: "linear-gradient(90deg, rgba(54,179,126,0.08), transparent)", borderLeft: "4px solid #36B37E" }}>
                   <div className="w-3 h-3 rounded-full bg-jira-green animate-pulse flex-shrink-0" />
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-jira-text">
@@ -75,11 +75,11 @@ export default function GamingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Total Gaming (30d)" value={summary ? formatMinutes(summary.total_minutes) : "-"} icon={<Gamepad2 size={16} />} color="#6554E0" />
-          <StatBox label="Sessions" value={summary?.session_count?.toString() ?? "-"} icon={<Activity size={16} />} color="#2684FF" />
-          <StatBox label="Unique Games" value={summary ? Object.keys(summary.by_game).length.toString() : "-"} icon={<Tv size={16} />} color="#36B37E" />
-          <StatBox label="Active Now" value={activeSessions.length.toString()} icon={<Clock size={16} />} color="#E97F0F" />
+        <div className="grid grid-cols-4 gap-4">
+          <StatBox label="Total Gaming (30d)" value={summary ? formatMinutes(summary.total_minutes) : "-"} icon={<Gamepad2 size={18} />} color="#6554E0" bg="#EAE6FF" />
+          <StatBox label="Sessions" value={summary?.session_count?.toString() ?? "-"} icon={<Activity size={18} />} color="#0052CC" bg="#DEEBFF" />
+          <StatBox label="Unique Games" value={summary ? Object.keys(summary.by_game).length.toString() : "-"} icon={<Tv size={18} />} color="#36B37E" bg="#E3FCEF" />
+          <StatBox label="Active Now" value={activeSessions.length.toString()} icon={<Clock size={18} />} color="#FFAB00" bg="#FFFAE6" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -170,14 +170,16 @@ export default function GamingPage() {
   );
 }
 
-function StatBox({ label, value, icon, color }: { label: string; value: string; icon: React.ReactNode; color: string }) {
+function StatBox({ label, value, icon, color, bg }: { label: string; value: string; icon: React.ReactNode; color: string; bg: string }) {
   return (
     <div className="jira-card p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span style={{ color }}>{icon}</span>
-        <span className="text-xs text-jira-textMuted">{label}</span>
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+          <span style={{ color }}>{icon}</span>
+        </div>
       </div>
       <div className="text-xl font-bold text-jira-text">{value}</div>
+      <div className="text-xs text-jira-textMuted mt-0.5">{label}</div>
     </div>
   );
 }
