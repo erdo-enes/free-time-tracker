@@ -3,6 +3,7 @@ from sqlalchemy import (
     ForeignKey, Enum as SAEnum, JSON, Table,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime, timezone
 from database import Base
 
@@ -55,6 +56,23 @@ class AccountPlatform(str, enum.Enum):
     steam = "steam"
 
 
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(10), unique=True, index=True, nullable=False)
+    name = Column(String(200), nullable=False)
+    description = Column(Text, default="")
+    style_color = Column(String(7), default="#0052CC")
+    lead = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    tasks = relationship("Task", back_populates="project")
+
+    def next_issue_number(self, db_session):
+        from sqlalchemy import func
+        max_num = db_session.query(func.max(Task.issue_number)).filter(Task.project_id == self.id).scalar() or 0
+        return max_num + 1
+
+
 class Category(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, index=True)
@@ -75,8 +93,12 @@ class Task(Base):
     issue_type = Column(SAEnum(IssueType), default=IssueType.task)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     parent_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True, index=True)
+    issue_number = Column(Integer, nullable=True, index=True)
+    sprint_id = Column(Integer, ForeignKey("sprints.id"), nullable=True, index=True)
     story_points = Column(Integer, nullable=True)
     order = Column(Integer, default=0)
+    start_date = Column(DateTime, nullable=True)
     due_date = Column(DateTime, nullable=True)
     labels = Column(JSON, default=list)
     original_estimate_minutes = Column(Integer, nullable=True)
@@ -87,7 +109,38 @@ class Task(Base):
     time_entries = relationship("TimeEntry", back_populates="task")
     comments = relationship("Comment", back_populates="task", order_by="Comment.created_at", cascade="all, delete-orphan")
     category = relationship("Category")
+    project = relationship("Project", back_populates="tasks")
+    sprint = relationship("Sprint", back_populates="tasks")
     subtasks = relationship("Task", backref="parent", remote_side="Task.id", foreign_keys="Task.parent_task_id")
+
+    @hybrid_property
+    def key(self):
+        if self.project and self.issue_number is not None:
+            return f"{self.project.key}-{self.issue_number}"
+        return f"FTJ-{self.id}"
+
+
+class IssueLink(Base):
+    __tablename__ = "issue_links"
+    id = Column(Integer, primary_key=True, index=True)
+    source_task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
+    link_type = Column(String(30), nullable=False)  # blocks, relates, duplicates
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    source = relationship("Task", foreign_keys=[source_task_id])
+    target = relationship("Task", foreign_keys=[target_task_id])
+
+
+class IssueHistory(Base):
+    __tablename__ = "issue_history"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
+    field = Column(String(50), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    actor = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
 
 class TimeEntry(Base):
@@ -150,7 +203,20 @@ class Sprint(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
     goal = Column(Text, default="")
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True, index=True)
     started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     ended_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    tasks = relationship("Task", back_populates="sprint")
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    email = Column(String(200), nullable=True)
+    display_name = Column(String(100), nullable=True)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

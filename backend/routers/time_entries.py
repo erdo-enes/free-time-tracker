@@ -4,8 +4,9 @@ from datetime import datetime, timezone
 from database import get_db
 from models import TimeEntry
 from schemas import TimeEntryCreate, TimeEntryOut, TimeEntryUpdate
+from security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[TimeEntryOut])

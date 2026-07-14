@@ -4,8 +4,9 @@ from database import get_db
 from models import WatchedAccount, AccountPlatform
 from schemas import WatchedAccountCreate, WatchedAccountOut
 from services import resolve_account_id
+from security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[WatchedAccountOut])

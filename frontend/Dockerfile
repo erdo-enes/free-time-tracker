@@ -6,6 +6,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+ARG BACKEND_URL
+ENV BACKEND_URL=$BACKEND_URL
 RUN npm run build
 
 FROM node:22-alpine AS runner
@@ -27,4 +29,4 @@ COPY --from=builder /app/postcss.config.js ./
 
 EXPOSE 3001
 
-CMD ["npm", "run", "dev", "--", "-p", "3001", "-H", "0.0.0.0"]
+CMD ["npm", "run", "start", "--", "-H", "0.0.0.0"]

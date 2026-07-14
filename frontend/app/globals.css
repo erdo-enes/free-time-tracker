@@ -2,16 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --jira-app: 244 245 247;
+  --jira-nav: 255 255 255;
+  --jira-elevated: 255 255 255;
+  --jira-surface: 244 245 247;
+  --jira-hover: 235 236 240;
+  --jira-border: 223 225 230;
+  --jira-borderLight: 193 199 208;
+  --jira-blueBg: 222 235 255;
+  --jira-text: 23 43 77;
+  --jira-textSub: 66 82 110;
+  --jira-textMuted: 107 119 140;
+  --jira-textLight: 151 160 175;
+  --jira-greenBg: 227 252 239;
+  --jira-yellowBg: 255 250 230;
+  --jira-redBg: 255 235 230;
+  --jira-orangeBg: 255 240 230;
+  --jira-purpleBg: 234 230 255;
+}
+
+.dark {
+  --jira-app: 15 20 25;
+  --jira-nav: 29 33 37;
+  --jira-elevated: 29 33 37;
+  --jira-surface: 34 39 43;
+  --jira-hover: 44 51 56;
+  --jira-border: 56 65 74;
+  --jira-borderLight: 74 85 96;
+  --jira-blueBg: 22 58 94;
+  --jira-text: 223 225 230;
+  --jira-textSub: 179 185 196;
+  --jira-textMuted: 143 150 163;
+  --jira-textLight: 107 114 128;
+  --jira-greenBg: 27 58 42;
+  --jira-yellowBg: 61 51 24;
+  --jira-redBg: 61 30 30;
+  --jira-orangeBg: 61 42 20;
+  --jira-purpleBg: 42 31 77;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
-  background: #F4F5F7;
-  color: #172B4D;
+  background: rgb(var(--jira-app));
+  color: rgb(var(--jira-text));
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Flip white surfaces to the dark elevated token in dark mode */
+.dark .bg-white {
+  background-color: rgb(var(--jira-elevated));
 }
 
 ::-webkit-scrollbar {
@@ -22,11 +67,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #C1C7D0;
+  background: rgb(var(--jira-borderLight));
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #97A0AF;
+  background: rgb(var(--jira-textLight));
 }
 
 @layer components {

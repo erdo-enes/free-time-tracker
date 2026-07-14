@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Clock, BarChart3, Gamepad2, Settings, Calendar,
+  LayoutGrid, Clock, BarChart3, Gamepad2, Settings, Calendar, GanttChart, Sun, Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
 
 const navItems = [
   { href: "/", label: "Board", icon: LayoutGrid },
+  { href: "/roadmap", label: "Roadmap", icon: GanttChart },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/time", label: "Time Tracker", icon: Clock },
   { href: "/analytics", label: "Reports", icon: BarChart3 },
@@ -17,14 +19,15 @@ const navItems = [
 ];
 
 const sections = [
-  { label: "PLAN", items: navItems.slice(0, 2) },
-  { label: "TRACK", items: navItems.slice(2, 3) },
-  { label: "INSIGHTS", items: navItems.slice(3, 5) },
-  { label: "CONFIG", items: navItems.slice(5) },
+  { label: "PLAN", items: navItems.slice(0, 3) },
+  { label: "TRACK", items: navItems.slice(3, 4) },
+  { label: "INSIGHTS", items: navItems.slice(4, 6) },
+  { label: "CONFIG", items: navItems.slice(6) },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { theme, toggle } = useTheme();
 
   return (
     <aside className="w-56 bg-jira-nav border-r border-jira-border flex flex-col flex-shrink-0">
@@ -58,8 +61,12 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-      <div className="px-4 py-3 border-t border-jira-border">
-        <div className="text-[10px] text-jira-textLight">v3.0.0 - FreeTime Jira</div>
+      <div className="px-4 py-3 border-t border-jira-border flex items-center justify-between">
+        <div className="text-[10px] text-jira-textLight">v3.1.0 - FreeTime Jira</div>
+        <button onClick={toggle} title="Toggle theme"
+          className="text-jira-textMuted hover:text-jira-text p-1 rounded hover:bg-jira-hover transition-colors">
+          {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
       </div>
     </aside>
   );

@@ -1,23 +1,28 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { api, type Summary, type GamingSummary, type DailyBreakdown, type WeeklyReport, type MonthlyReport, type Heatmap } from "@/lib/api";
+import { api, type Summary, type GamingSummary, type DailyBreakdown, type WeeklyReport, type MonthlyReport, type Heatmap, type Velocity, type Burndown, type CumulativeFlow } from "@/lib/api";
+import { useProjects } from "@/lib/projects";
 import { formatMinutes, cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area, CartesianGrid,
+  LineChart, Line,
 } from "recharts";
 import {
   Clock, TrendingUp, Gamepad2, Activity, BookOpen, Award,
   ChevronLeft, ChevronRight, Flame, Target, CalendarDays,
-  BarChart3, LayoutDashboard, Zap,
+  BarChart3, LayoutDashboard, Zap, Rocket,
 } from "lucide-react";
 
 const PIE_COLORS = ["#0052CC", "#36B37E", "#6554E0", "#FF5630", "#FFAB00", "#FF8B00", "#4C9AFF"];
 const HEATMAP_COLORS = ["#EBECF0", "#C6E0FF", "#6BA4FF", "#2684FF", "#0052CC", "#0747A6"];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const CFD_COLORS: Record<string, string> = {
+  backlog: "#A5ADBA", selected: "#4C9AFF", in_progress: "#0052CC", review: "#FFAB00", done: "#36B37E",
+};
 
-type Tab = "overview" | "weekly" | "monthly";
+type Tab = "overview" | "weekly" | "monthly" | "agile";
 
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -55,6 +60,7 @@ export default function AnalyticsPage() {
             <TabBtn active={tab === "overview"} onClick={() => setTab("overview")} icon={<LayoutDashboard size={14} />} label="Overview" />
             <TabBtn active={tab === "weekly"} onClick={() => setTab("weekly")} icon={<BarChart3 size={14} />} label="Weekly" />
             <TabBtn active={tab === "monthly"} onClick={() => setTab("monthly")} icon={<CalendarDays size={14} />} label="Monthly" />
+            <TabBtn active={tab === "agile"} onClick={() => setTab("agile")} icon={<Rocket size={14} />} label="Agile" />
           </div>
         </div>
       </div>
@@ -63,6 +69,7 @@ export default function AnalyticsPage() {
         {tab === "overview" && <OverviewTab summary={summary} gaming={gaming} daily={daily} heatmap={heatmap} days={days} setDays={setDays} />}
         {tab === "weekly" && <WeeklyTab />}
         {tab === "monthly" && <MonthlyTab />}
+        {tab === "agile" && <AgileTab />}
       </div>
     </div>
   );
@@ -520,4 +527,125 @@ function StatCard({ label, value, sublabel, icon, color, bg }: { label: string; 
 
 function EmptyChart() {
   return <div className="h-[260px] flex items-center justify-center text-jira-textMuted text-sm">No data yet</div>;
+}
+
+/* ============ AGILE TAB ============ */
+
+function AgileTab() {
+  const { activeProject } = useProjects();
+  const projectId = activeProject?.id ?? null;
+  const [velocity, setVelocity] = useState<Velocity | null>(null);
+  const [burndown, setBurndown] = useState<Burndown | null>(null);
+  const [cfd, setCfd] = useState<CumulativeFlow | null>(null);
+  const [sprints, setSprints] = useState<{ id: number; name: string; is_active: boolean }[]>([]);
+  const [selectedSprint, setSelectedSprint] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!projectId) { setLoading(false); return; }
+    setLoading(true);
+    Promise.all([api.analytics.velocity(projectId), api.sprints.list(projectId), api.analytics.cumulativeFlow(projectId, 30)])
+      .then(([v, sp, c]) => {
+        setVelocity(v);
+        setSprints(sp);
+        setCfd(c);
+        const active = sp.find((s) => s.is_active);
+        setSelectedSprint(active?.id ?? sp[0]?.id ?? null);
+      })
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  useEffect(() => {
+    if (selectedSprint) api.analytics.burndown(selectedSprint).then(setBurndown).catch(() => setBurndown(null));
+    else setBurndown(null);
+  }, [selectedSprint]);
+
+  if (loading) return <div className="text-jira-textMuted p-6">Loading agile reports...</div>;
+  if (!projectId) return <div className="text-jira-textMuted p-6">Select a project to view agile reports.</div>;
+
+  const velocityData = velocity?.sprints.map((s) => ({ name: s.name, committed: s.total_points, completed: s.completed_points })) || [];
+  const committedTotal = velocity?.sprints.reduce((s, x) => s + x.total_points, 0) || 0;
+  const completedTotal = velocity?.sprints.reduce((s, x) => s + x.completed_points, 0) || 0;
+  const avgVelocity = velocity && velocity.sprints.length > 0 ? Math.round(completedTotal / velocity.sprints.length) : 0;
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-2 text-sm text-jira-textMuted">
+        <Rocket size={15} className="text-jira-blue" /> Agile reports for <span className="font-medium text-jira-text">{activeProject?.name}</span> ({activeProject?.key})
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Sprints" value={String(velocity?.sprints.length || 0)} sublabel="total" icon={<Rocket size={20} />} color="#0052CC" bg="#DEEBFF" />
+        <StatCard label="Avg Velocity" value={String(avgVelocity)} sublabel="points / sprint" icon={<TrendingUp size={20} />} color="#36B37E" bg="#E3FCEF" />
+        <StatCard label="Committed" value={String(committedTotal)} sublabel="story points" icon={<Target size={20} />} color="#6554E0" bg="#EAE6FF" />
+        <StatCard label="Completed" value={String(completedTotal)} sublabel="story points" icon={<Award size={20} />} color="#FFAB00" bg="#FFFAE6" />
+      </div>
+
+      {/* Velocity chart */}
+      <div className="jira-card p-5">
+        <h3 className="text-sm font-bold text-jira-text mb-1">Velocity</h3>
+        <p className="text-xs text-jira-textMuted mb-4">Story points committed vs completed per sprint</p>
+        {velocityData.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={velocityData} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#DFE1E6" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#6B778C" }} />
+              <YAxis tick={{ fontSize: 11, fill: "#6B778C" }} allowDecimals={false} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #DFE1E6", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="committed" name="Committed" fill="#C1C7D0" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="completed" name="Completed" fill="#0052CC" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Burndown chart */}
+      <div className="jira-card p-5">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-bold text-jira-text">Sprint Burndown</h3>
+          {sprints.length > 0 && (
+            <select value={selectedSprint ?? ""} onChange={(e) => setSelectedSprint(Number(e.target.value))} className="jira-select text-xs">
+              {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}{s.is_active ? " (active)" : ""}</option>)}
+            </select>
+          )}
+        </div>
+        <p className="text-xs text-jira-textMuted mb-4">Ideal vs actual remaining story points</p>
+        {!burndown || burndown.series.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={burndown.series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#DFE1E6" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#6B778C" }} unit="d" />
+              <YAxis tick={{ fontSize: 11, fill: "#6B778C" }} allowDecimals={false} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #DFE1E6", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="ideal" name="Ideal" stroke="#A5ADBA" strokeDasharray="5 5" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="remaining" name="Remaining" stroke="#0052CC" strokeWidth={2.5} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Cumulative flow */}
+      <div className="jira-card p-5">
+        <h3 className="text-sm font-bold text-jira-text mb-1">Cumulative Flow Diagram</h3>
+        <p className="text-xs text-jira-textMuted mb-4">Issue count by status over the last 30 days</p>
+        {!cfd || cfd.series.length === 0 ? <EmptyChart /> : (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={cfd.series}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#DFE1E6" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6B778C" }} tickFormatter={(d) => d.slice(5)} />
+              <YAxis tick={{ fontSize: 11, fill: "#6B778C" }} allowDecimals={false} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #DFE1E6", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              {cfd.statuses.map((s) => (
+                <Area key={s} type="monotone" dataKey={s} stackId="1" stroke={CFD_COLORS[s] || "#999"} fill={CFD_COLORS[s] || "#999"} fillOpacity={0.6} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
 }

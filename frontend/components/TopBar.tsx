@@ -4,6 +4,8 @@ import { Search, Bell, Plus, ChevronDown, KanbanSquare, Clock, Calendar, Setting
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { api, type Task, type TimeEntry } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useProjects } from "@/lib/projects";
 import { cn, formatMinutes, formatDateTime } from "@/lib/utils";
 
 type DropdownType = "create" | "projects" | "notifications" | "profile" | "search" | null;
@@ -18,7 +20,13 @@ export function TopBar() {
   const [notifCount, setNotifCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const { projects, activeProject, setActiveProjectId, reload: reloadProjects } = useProjects();
+  const profileName = user?.display_name || user?.username || "User";
+  const profileInitial = (user?.display_name || user?.username || "U").charAt(0).toUpperCase();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [newProject, setNewProject] = useState({ key: "", name: "" });
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -116,15 +124,46 @@ export function TopBar() {
 
         {/* Projects dropdown */}
         {openDropdown === "projects" && (
-          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-jira-border rounded-lg shadow-dropdown py-1.5 z-50">
-            <div className="px-3 py-1.5 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider">Recent Projects</div>
-            <button onClick={() => handleNavigate("/")} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-jira-textSub hover:bg-jira-hover transition-colors">
-              <div className="w-7 h-7 rounded bg-jira-blueBg flex items-center justify-center"><LayoutGrid size={14} className="text-jira-blue" /></div>
-              <div className="text-left flex-1">
-                <div className="font-medium text-jira-text">My Free Time</div>
-                <div className="text-xs text-jira-textMuted">Personal board</div>
+          <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-jira-border rounded-lg shadow-dropdown py-1.5 z-50">
+            <div className="px-3 py-1.5 text-[10px] font-bold text-jira-textMuted uppercase tracking-wider">Projects</div>
+            {projects.length === 0 && (
+              <div className="px-3 py-3 text-sm text-jira-textMuted">No projects yet.</div>
+            )}
+            {projects.map((p) => (
+              <button key={p.id} onClick={() => { setActiveProjectId(p.id); setOpenDropdown(null); router.push("/"); }}
+                className={cn("w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-jira-hover transition-colors text-left",
+                  activeProject?.id === p.id ? "bg-jira-blueBg" : "text-jira-textSub")}>
+                <div className="w-7 h-7 rounded flex items-center justify-center text-white font-bold text-[10px]" style={{ background: p.style_color }}>{p.key.slice(0, 2)}</div>
+                <div className="text-left flex-1">
+                  <div className="font-medium text-jira-text">{p.name}</div>
+                  <div className="text-xs text-jira-textMuted font-mono">{p.key}</div>
+                </div>
+                {activeProject?.id === p.id && <span className="w-2 h-2 rounded-full bg-jira-blue" />}
+              </button>
+            ))}
+            <div className="border-t border-jira-border my-1" />
+            {showCreateProject ? (
+              <div className="px-3 py-2 space-y-2">
+                <input placeholder="KEY (e.g. CKA)" value={newProject.key} maxLength={10}
+                  onChange={(e) => setNewProject({ ...newProject, key: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })}
+                  className="jira-input w-full text-xs font-mono" />
+                <input placeholder="Project name" value={newProject.name}
+                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  className="jira-input w-full text-xs" />
+                <div className="flex gap-2">
+                  <button onClick={async () => {
+                    if (!newProject.key.trim() || !newProject.name.trim()) return;
+                    try { await api.projects.create({ key: newProject.key, name: newProject.name }); reloadProjects(); setNewProject({ key: "", name: "" }); setShowCreateProject(false); }
+                    catch (e) { alert(String(e).replace(/^Error:\s*/i, "")); }
+                  }} className="jira-btn-primary text-xs flex-1">Create</button>
+                  <button onClick={() => setShowCreateProject(false)} className="jira-btn-secondary text-xs">Cancel</button>
+                </div>
               </div>
-            </button>
+            ) : (
+              <button onClick={() => setShowCreateProject(true)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-jira-blue hover:bg-jira-hover transition-colors">
+                <Plus size={15} /> New Project
+              </button>
+            )}
             <div className="border-t border-jira-border my-1" />
             <button onClick={() => handleNavigate("/calendar")} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-jira-textSub hover:bg-jira-hover transition-colors">
               <Calendar size={15} className="text-jira-textMuted ml-1" />
@@ -175,7 +214,7 @@ export function TopBar() {
                     {searchResults.tasks.map((t) => (
                       <button key={t.id} onClick={() => { handleNavigate("/"); setSearchQuery(""); setSearchResults(null); }}
                         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-jira-hover transition-colors text-left">
-                        <span className="text-[10px] text-jira-textMuted font-mono w-14">FTJ-{t.id}</span>
+                        <span className="text-[10px] text-jira-textMuted font-mono w-14">{t.key}</span>
                         <span className="text-sm text-jira-text flex-1 truncate">{t.title}</span>
                         <span className="text-[10px] text-jira-textMuted capitalize">{t.status.replace("_", " ")}</span>
                       </button>
@@ -252,7 +291,7 @@ export function TopBar() {
                       {t.status === "done" ? <CheckCircle2 size={14} className="text-jira-green mt-0.5 flex-shrink-0" /> : <AlertCircle size={14} className="text-jira-yellow mt-0.5 flex-shrink-0" />}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-jira-text truncate">{t.title}</div>
-                        <div className="text-[10px] text-jira-textMuted">FTJ-{t.id} - {t.status.replace("_", " ")}</div>
+                        <div className="text-[10px] text-jira-textMuted">{t.key} - {t.status.replace("_", " ")}</div>
                       </div>
                     </button>
                   ))}
@@ -280,16 +319,16 @@ export function TopBar() {
         {/* Profile */}
         <button onClick={() => toggleDropdown("profile")}
           className={cn("w-8 h-8 bg-jira-blue rounded-full flex items-center justify-center text-white text-xs font-bold transition-all hover:ring-2 hover:ring-jira-blue/30", openDropdown === "profile" && "ring-2 ring-jira-blue/30")}>
-          E
+          {profileInitial}
         </button>
         {openDropdown === "profile" && (
           <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-jira-border rounded-lg shadow-dropdown py-1.5 z-50">
             <div className="px-4 py-3 border-b border-jira-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-jira-blue rounded-full flex items-center justify-center text-white text-sm font-bold">E</div>
+                <div className="w-10 h-10 bg-jira-blue rounded-full flex items-center justify-center text-white text-sm font-bold">{profileInitial}</div>
                 <div>
-                  <div className="text-sm font-bold text-jira-text">Enes</div>
-                  <div className="text-xs text-jira-textMuted">Personal Account</div>
+                  <div className="text-sm font-bold text-jira-text">{profileName}</div>
+                  <div className="text-xs text-jira-textMuted">@{user?.username || "user"}</div>
                 </div>
               </div>
             </div>
@@ -312,6 +351,10 @@ export function TopBar() {
               </button>
               <button onClick={() => handleNavigate("/gaming")} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-jira-textSub hover:bg-jira-hover transition-colors">
                 <KanbanSquare size={15} className="text-jira-textMuted" /> Gaming
+              </button>
+              <div className="border-t border-jira-border my-1" />
+              <button onClick={() => { setOpenDropdown(null); logout(); }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-jira-red hover:bg-jira-redBg transition-colors">
+                <LogOut size={15} /> Log out
               </button>
             </div>
           </div>

@@ -4,12 +4,13 @@ from datetime import datetime, timezone
 from database import get_db
 from models import GamingSession, TimeEntry, Platform, EntryType
 from schemas import GamingSessionOut, SwitchIngestPayload
+from security import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/sessions", response_model=list[GamingSessionOut])
-def list_sessions(limit: int = 50, db: Session = Depends(get_db)):
+def list_sessions(limit: int = 50, db: Session = Depends(get_db), _user=Depends(get_current_user)):
     return db.query(GamingSession).order_by(GamingSession.started_at.desc()).limit(limit).all()
 
 

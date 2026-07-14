@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Category
 from schemas import CategoryCreate, CategoryOut
+from security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[CategoryOut])

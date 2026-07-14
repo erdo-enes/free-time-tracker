@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Comment, Task
 from schemas import CommentCreate, CommentOut
+from security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/{task_id}/comments", response_model=list[CommentOut])

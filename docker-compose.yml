@@ -16,12 +16,16 @@ services:
       - FREETIME_XBOX_OPENXBL_KEY=${FREETIME_XBOX_OPENXBL_KEY:-}
       - FREETIME_SWITCH2_NSO_TOKEN=${FREETIME_SWITCH2_NSO_TOKEN:-}
       - FREETIME_TRACKER_POLL_INTERVAL_SECONDS=${FREETIME_TRACKER_POLL_INTERVAL_SECONDS:-300}
+      - FREETIME_JWT_SECRET=${FREETIME_JWT_SECRET:-freetime-jira-dev-secret-change-me}
+      - FREETIME_JWT_EXPIRE_MINUTES=${FREETIME_JWT_EXPIRE_MINUTES:-10080}
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - BACKEND_URL=http://backend:8000
     container_name: ftj-frontend
     ports:
       - "3001:3001"

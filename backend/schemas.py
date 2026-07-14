@@ -1,7 +1,32 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from datetime import datetime
 from typing import Optional, Any, List
 from models import TaskStatus, TaskPriority, IssueType, EntryType, Platform, AccountPlatform
+
+
+class ProjectBase(BaseModel):
+    key: str = Field(min_length=2, max_length=10)
+    name: str
+    description: str = ""
+    style_color: str = "#0052CC"
+    lead: Optional[str] = None
+
+
+class ProjectCreate(ProjectBase):
+    pass
+
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    style_color: Optional[str] = None
+    lead: Optional[str] = None
+
+
+class ProjectOut(ProjectBase):
+    id: int
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategoryBase(BaseModel):
@@ -28,7 +53,10 @@ class TaskBase(BaseModel):
     issue_type: IssueType = IssueType.task
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
+    project_id: Optional[int] = None
+    sprint_id: Optional[int] = None
     story_points: Optional[int] = None
+    start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     labels: Optional[List[str]] = None
     original_estimate_minutes: Optional[int] = None
@@ -48,7 +76,10 @@ class TaskUpdate(BaseModel):
     issue_type: Optional[IssueType] = None
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
+    project_id: Optional[int] = None
+    sprint_id: Optional[int] = None
     story_points: Optional[int] = None
+    start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
     labels: Optional[List[str]] = None
     original_estimate_minutes: Optional[int] = None
@@ -59,6 +90,8 @@ class TaskUpdate(BaseModel):
 
 class TaskOut(TaskBase):
     id: int
+    issue_number: Optional[int] = None
+    key: str
     order: int
     created_at: datetime
     updated_at: datetime
@@ -157,6 +190,7 @@ class CommentOut(BaseModel):
 class SprintBase(BaseModel):
     name: str
     goal: str = ""
+    project_id: Optional[int] = None
 
 
 class SprintCreate(SprintBase):
@@ -168,5 +202,61 @@ class SprintOut(SprintBase):
     is_active: bool
     started_at: Optional[datetime]
     ended_at: Optional[datetime]
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=100)
+    password: str = Field(min_length=6, max_length=128)
+    email: Optional[EmailStr] = None
+    display_name: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: Optional[str]
+    display_name: Optional[str]
+    is_active: bool
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
+
+
+class IssueLinkCreate(BaseModel):
+    target_task_id: int
+    link_type: str  # blocks, relates, duplicates
+
+
+class IssueLinkOut(BaseModel):
+    id: int
+    source_task_id: int
+    target_task_id: int
+    target_key: str | None = None
+    target_title: str | None = None
+    target_status: str | None = None
+    link_type: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class IssueHistoryOut(BaseModel):
+    id: int
+    task_id: int
+    field: str
+    old_value: str | None
+    new_value: str | None
+    actor: str | None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

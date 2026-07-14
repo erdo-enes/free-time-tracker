@@ -20,6 +20,10 @@ class Settings(BaseSettings):
 
     tracker_poll_interval_seconds: int = 300
 
+    jwt_secret: str = "freetime-jira-dev-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 10080  # 7 days
+
     class Config:
         env_file = ".env"
         env_prefix = "FREETIME_"

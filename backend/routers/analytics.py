@@ -4,9 +4,10 @@ from sqlalchemy import func, extract
 from datetime import datetime, timedelta, timezone, date
 from calendar import monthrange
 from database import get_db
-from models import TimeEntry, GamingSession, Platform, Category
+from models import TimeEntry, GamingSession, Platform, Category, Sprint, Task, TaskStatus, IssueHistory
+from security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/summary")
@@ -312,3 +313,119 @@ def heatmap(months: int = 3, db: Session = Depends(get_db)):
         "active_days": active_days,
         "total_days": len(days),
     }
+
+
+@router.get("/velocity")
+def velocity(project_id: int, db: Session = Depends(get_db)):
+    """Story points completed per sprint (completed or active) for a project."""
+    sprints = db.query(Sprint).filter(Sprint.project_id == project_id).order_by(Sprint.started_at).all()
+    out = []
+    for sp in sprints:
+        tasks = db.query(Task).filter(Task.sprint_id == sp.id).all()
+        total_pts = sum((t.story_points or 0) for t in tasks)
+        done_pts = sum((t.story_points or 0) for t in tasks if t.status == TaskStatus.done)
+        out.append({
+            "sprint_id": sp.id,
+            "name": sp.name,
+            "is_active": sp.is_active,
+            "started_at": sp.started_at.isoformat() if sp.started_at else None,
+            "ended_at": sp.ended_at.isoformat() if sp.ended_at else None,
+            "total_points": total_pts,
+            "completed_points": done_pts,
+            "issue_count": len(tasks),
+            "done_count": sum(1 for t in tasks if t.status == TaskStatus.done),
+        })
+    return {"sprints": out}
+
+
+@router.get("/burndown")
+def burndown(sprint_id: int, db: Session = Depends(get_db)):
+    """Ideal vs actual remaining story points over the sprint duration."""
+    sprint = db.query(Sprint).get(sprint_id)
+    if not sprint:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Sprint not found")
+    start = sprint.started_at or sprint.created_at
+    end = sprint.ended_at or datetime.now(timezone.utc)
+    total_pts = db.query(func.sum(Task.story_points)).filter(Task.sprint_id == sprint_id).scalar() or 0
+    tasks = db.query(Task).filter(Task.sprint_id == sprint_id).all()
+    # completion events from history (status -> done)
+    completion_by_day = {}
+    for t in tasks:
+        if t.status != TaskStatus.done:
+            continue
+        done_entry = (
+            db.query(IssueHistory)
+            .filter(IssueHistory.task_id == t.id, IssueHistory.field == "status", IssueHistory.new_value == "done")
+            .order_by(IssueHistory.created_at.desc())
+            .first()
+        )
+        if done_entry:
+            d = done_entry.created_at.date()
+            completion_by_day[d] = completion_by_day.get(d, 0) + (t.story_points or 0)
+        else:
+            # no history: assume done by end
+            d = end.date()
+            completion_by_day[d] = completion_by_day.get(d, 0) + (t.story_points or 0)
+
+    num_days = max((end.date() - start.date()).days, 0) + 1
+    series = []
+    burned = 0
+    for i in range(num_days):
+        d = (start.date() + timedelta(days=i))
+        burned += completion_by_day.get(d, 0)
+        remaining = max(total_pts - burned, 0)
+        ideal = round(total_pts * (1 - (i / max(num_days - 1, 1))), 1)
+        series.append({
+            "date": d.isoformat(),
+            "day": i + 1,
+            "ideal": ideal,
+            "remaining": remaining,
+        })
+    return {
+        "sprint_id": sprint_id,
+        "sprint_name": sprint.name,
+        "is_active": sprint.is_active,
+        "total_points": total_pts,
+        "start_date": start.date().isoformat(),
+        "end_date": end.date().isoformat(),
+        "series": series,
+    }
+
+
+@router.get("/cumulative-flow")
+def cumulative_flow(project_id: int, days: int = 30, db: Session = Depends(get_db)):
+    """Count of issues in each status per day for the last N days (from history)."""
+    today = datetime.now(timezone.utc).date()
+    start = today - timedelta(days=days)
+    tasks = db.query(Task).filter(Task.project_id == project_id).all()
+    statuses = ["backlog", "selected", "in_progress", "review", "done"]
+
+    # Build per-task status timeline from history
+    def status_on_date(task, target_date):
+        hist = (
+            db.query(IssueHistory)
+            .filter(IssueHistory.task_id == task.id, IssueHistory.field == "status",
+                    IssueHistory.created_at <= datetime.combine(target_date, datetime.max.time()))
+            .order_by(IssueHistory.created_at.asc())
+            .all()
+        )
+        if not hist:
+            # created before target_date? use current status if created before, else not existed
+            if task.created_at.date() <= target_date:
+                return task.status.value if task.status else "backlog"
+            return None
+        return hist[-1].new_value or "backlog"
+
+    series = []
+    for i in range(days + 1):
+        d = start + timedelta(days=i)
+        counts = {s: 0 for s in statuses}
+        for t in tasks:
+            if t.created_at.date() > d:
+                continue
+            st = status_on_date(t, d)
+            if st in counts:
+                counts[st] += 1
+        series.append({"date": d.isoformat(), **counts})
+    return {"project_id": project_id, "start_date": start.isoformat(), "end_date": today.isoformat(), "statuses": statuses, "series": series}
