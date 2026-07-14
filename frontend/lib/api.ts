@@ -109,6 +109,90 @@ export interface GamingSummary {
   by_account: Record<string, number>;
 }
 
+export interface WeeklyReportDay {
+  date: string;
+  day_name: string;
+  short_date: string;
+  is_today: boolean;
+  is_weekend: boolean;
+  total_minutes: number;
+  entry_count: number;
+  by_category: Record<string, number>;
+  entries: {
+    id: number;
+    title: string;
+    duration_minutes: number;
+    category: string | null;
+    category_color: string | null;
+    started_at: string;
+  }[];
+}
+
+export interface WeeklyReport {
+  period: string;
+  offset: number;
+  start_date: string;
+  end_date: string;
+  total_minutes: number;
+  total_hours: number;
+  active_days: number;
+  longest_streak: number;
+  entry_count: number;
+  change_pct: number;
+  prev_week_minutes: number;
+  by_category: Record<string, number>;
+  days: WeeklyReportDay[];
+}
+
+export interface MonthlyReportWeek {
+  week_num: number;
+  start_date: string;
+  end_date: string;
+  total_minutes: number;
+  active_days: number;
+  days: {
+    date: string;
+    day: number;
+    minutes: number;
+    is_today: boolean;
+    is_weekend: boolean;
+  }[];
+}
+
+export interface MonthlyReport {
+  period: string;
+  offset: number;
+  month_name: string;
+  days_in_month: number;
+  total_minutes: number;
+  total_hours: number;
+  active_days: number;
+  daily_avg_minutes: number;
+  best_day: { date: string; minutes: number } | null;
+  entry_count: number;
+  change_pct: number;
+  prev_month_minutes: number;
+  by_category: Record<string, number>;
+  weeks: MonthlyReportWeek[];
+}
+
+export interface HeatmapDay {
+  date: string;
+  minutes: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+export interface Heatmap {
+  months: number;
+  start_date: string;
+  end_date: string;
+  days: HeatmapDay[];
+  max_minutes: number;
+  total_minutes: number;
+  active_days: number;
+  total_days: number;
+}
+
 export interface WatchedAccount {
   id: number;
   platform: "psn" | "xbox" | "switch2" | "steam";
@@ -162,6 +246,9 @@ export const api = {
     summary: (days: number = 7) => fetchApi<Summary>(`/analytics/summary?days=${days}`),
     daily: (days: number = 30) => fetchApi<DailyBreakdown>(`/analytics/daily?days=${days}`),
     gaming: (days: number = 30) => fetchApi<GamingSummary>(`/analytics/gaming?days=${days}`),
+    weeklyReport: (offset: number = 0) => fetchApi<WeeklyReport>(`/analytics/weekly-report?offset=${offset}`),
+    monthlyReport: (offset: number = 0) => fetchApi<MonthlyReport>(`/analytics/monthly-report?offset=${offset}`),
+    heatmap: (months: number = 3) => fetchApi<Heatmap>(`/analytics/heatmap?months=${months}`),
   },
   gaming: {
     sessions: (limit: number = 50) => fetchApi<GamingSession[]>(`/gaming/sessions?limit=${limit}`),
