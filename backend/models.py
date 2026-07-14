@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Boolean, Float,
-    ForeignKey, Enum as SAEnum, JSON,
+    ForeignKey, Enum as SAEnum, JSON, Table,
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -78,9 +78,14 @@ class Task(Base):
     story_points = Column(Integer, nullable=True)
     order = Column(Integer, default=0)
     due_date = Column(DateTime, nullable=True)
+    labels = Column(JSON, default=list)
+    original_estimate_minutes = Column(Integer, nullable=True)
+    remaining_estimate_minutes = Column(Integer, nullable=True)
+    assignee = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     time_entries = relationship("TimeEntry", back_populates="task")
+    comments = relationship("Comment", back_populates="task", order_by="Comment.created_at", cascade="all, delete-orphan")
     category = relationship("Category")
     subtasks = relationship("Task", backref="parent", remote_side="Task.id", foreign_keys="Task.parent_task_id")
 
@@ -127,4 +132,25 @@ class WatchedAccount(Base):
     is_active = Column(Boolean, default=True)
     last_checked = Column(DateTime, nullable=True)
     last_status = Column(String(200), default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    author = Column(String(100), default="You")
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    task = relationship("Task", back_populates="comments")
+
+
+class Sprint(Base):
+    __tablename__ = "sprints"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    goal = Column(Text, default="")
+    is_active = Column(Boolean, default=True)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    ended_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

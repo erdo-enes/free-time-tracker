@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional, Any, List
 from models import TaskStatus, TaskPriority, IssueType, EntryType, Platform, AccountPlatform
 
 
@@ -30,6 +30,10 @@ class TaskBase(BaseModel):
     parent_task_id: Optional[int] = None
     story_points: Optional[int] = None
     due_date: Optional[datetime] = None
+    labels: Optional[List[str]] = None
+    original_estimate_minutes: Optional[int] = None
+    remaining_estimate_minutes: Optional[int] = None
+    assignee: Optional[str] = None
 
 
 class TaskCreate(TaskBase):
@@ -46,6 +50,10 @@ class TaskUpdate(BaseModel):
     parent_task_id: Optional[int] = None
     story_points: Optional[int] = None
     due_date: Optional[datetime] = None
+    labels: Optional[List[str]] = None
+    original_estimate_minutes: Optional[int] = None
+    remaining_estimate_minutes: Optional[int] = None
+    assignee: Optional[str] = None
     order: Optional[int] = None
 
 
@@ -128,5 +136,37 @@ class WatchedAccountOut(WatchedAccountBase):
     is_active: bool
     last_checked: Optional[datetime]
     last_status: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommentCreate(BaseModel):
+    body: str
+    author: str = "You"
+
+
+class CommentOut(BaseModel):
+    id: int
+    task_id: int
+    author: str
+    body: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SprintBase(BaseModel):
+    name: str
+    goal: str = ""
+
+
+class SprintCreate(SprintBase):
+    pass
+
+
+class SprintOut(SprintBase):
+    id: int
+    is_active: bool
+    started_at: Optional[datetime]
+    ended_at: Optional[datetime]
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

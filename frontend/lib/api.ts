@@ -32,9 +32,31 @@ export interface Task {
   parent_task_id: number | null;
   story_points: number | null;
   due_date: string | null;
+  labels: string[] | null;
+  original_estimate_minutes: number | null;
+  remaining_estimate_minutes: number | null;
+  assignee: string | null;
   order: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface Comment {
+  id: number;
+  task_id: number;
+  author: string;
+  body: string;
+  created_at: string;
+}
+
+export interface Sprint {
+  id: number;
+  name: string;
+  goal: string;
+  is_active: boolean;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string;
 }
 
 export interface TimeEntry {
@@ -115,6 +137,12 @@ export const api = {
     delete: (id: number) => fetchApi<void>(`/tasks/${id}`, { method: "DELETE" }),
     move: (id: number, newStatus: string, newOrder: number = 0) =>
       fetchApi<Task>(`/tasks/${id}/move?new_status=${newStatus}&new_order=${newOrder}`, { method: "POST" }),
+    comments: {
+      list: (taskId: number) => fetchApi<Comment[]>(`/tasks/${taskId}/comments`),
+      add: (taskId: number, body: string) =>
+        fetchApi<Comment>(`/tasks/${taskId}/comments`, { method: "POST", body: JSON.stringify({ body }) }),
+      delete: (commentId: number) => fetchApi<void>(`/tasks/comments/${commentId}`, { method: "DELETE" }),
+    },
   },
   timeEntries: {
     list: (params?: { category_id?: number; platform?: string; limit?: number }) => {
@@ -137,6 +165,11 @@ export const api = {
   },
   gaming: {
     sessions: (limit: number = 50) => fetchApi<GamingSession[]>(`/gaming/sessions?limit=${limit}`),
+  },
+  sprints: {
+    list: () => fetchApi<Sprint[]>("/sprints"),
+    create: (data: { name: string; goal?: string }) =>
+      fetchApi<Sprint>("/sprints", { method: "POST", body: JSON.stringify(data) }),
   },
   watchedAccounts: {
     list: () => fetchApi<WatchedAccount[]>("/watched-accounts"),
