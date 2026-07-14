@@ -228,13 +228,16 @@ export default function TimeTrackerPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-jira-border bg-jira-panel">
+      <div className="px-6 py-3 border-b border-jira-border bg-white">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-jira-textMuted text-xs">
-              <span>Track</span><span>/</span><span className="text-jira-textSub">Time Tracker</span>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-jira-greenBg flex items-center justify-center">
+              <Clock size={20} className="text-jira-green" />
             </div>
-            <h1 className="text-xl font-bold text-jira-text mt-1">Time Tracker</h1>
+            <div>
+              <h1 className="text-lg font-bold text-jira-text">Time Tracker</h1>
+              <div className="text-xs text-jira-textMuted">Log study sessions, exam prep, and personal time</div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex bg-jira-surface border border-jira-border rounded overflow-hidden">
@@ -256,7 +259,7 @@ export default function TimeTrackerPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-6 space-y-6 bg-jira-app">
         {/* Timer bar - always visible */}
         <div className="jira-card p-4">
           {timerRunning ? (

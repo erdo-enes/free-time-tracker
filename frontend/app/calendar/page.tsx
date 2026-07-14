@@ -10,13 +10,11 @@ import {
 } from "date-fns";
 import {
   ChevronLeft, ChevronRight, Plus, Trash2, X, Clock,
-  Calendar as CalIcon,
+  Calendar as CalIcon, Tag,
 } from "lucide-react";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const SLOT_HEIGHT = 48; // px per hour
-const DAY_WIDTH = "flex-1";
-
+const SLOT_HEIGHT = 48;
 const CATEGORY_COLORS = ["#0052CC", "#36B37E", "#6554E0", "#FF5630", "#FFAB00", "#FF8B00", "#4C9AFF"];
 
 export default function CalendarPage() {
@@ -28,8 +26,14 @@ export default function CalendarPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ title: "", category_id: "", task_id: "" });
   const [editEntry, setEditEntry] = useState<TimeEntry | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const dragRef = useRef<{ dayIndex: number; startSlot: number; day: Date } | null>(null);
   const calendarGridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = useCallback(() => {
     const weekEnd = addDays(weekStart, 7);
@@ -210,14 +214,30 @@ export default function CalendarPage() {
           </div>
 
           {/* Day columns */}
-          {weekDays.map((day, dayIndex) => (
-            <div key={day.toISOString()} className={cn("flex-1 border-r border-jira-border last:border-r-0 relative", isToday(day) && "bg-jira-blueBg/30")}>
+          {weekDays.map((day, dayIndex) => {
+            const isCurrentDay = isToday(day);
+            const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
+            const timeLineTop = currentHour * SLOT_HEIGHT;
+            return (
+            <div key={day.toISOString()} className={cn("flex-1 border-r border-jira-border last:border-r-0 relative", isCurrentDay && "bg-jira-blueBg/20")}>
+              {/* Current time line */}
+              {isCurrentDay && (
+                <div className="absolute left-0 right-0 z-15 pointer-events-none" style={{ top: `${timeLineTop}px` }}>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-jira-red -ml-1" />
+                    <div className="flex-1 h-0.5 bg-jira-red" />
+                  </div>
+                  <div className="absolute -top-4 right-1 text-[9px] text-jira-red font-mono font-bold bg-white px-1 rounded">
+                    {format(currentTime, "HH:mm")}
+                  </div>
+                </div>
+              )}
               {/* Hour slots */}
               {HOURS.map((h) => (
                 <div
                   key={h}
                   className={cn(
-                    "border-b border-jira-border/50 cursor-pointer hover:bg-jira-hover/40 transition-colors relative",
+                    "border-b border-jira-border/40 cursor-pointer hover:bg-jira-hover/50 transition-colors relative",
                     dragSelection && dragSelection.day && isSameDay(dragSelection.day, day) &&
                     h >= dragSelection.startHour && h < dragSelection.endHour && "bg-jira-blueBg border-jira-blue/30"
                   )}
@@ -269,7 +289,8 @@ export default function CalendarPage() {
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

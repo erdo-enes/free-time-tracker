@@ -9,16 +9,16 @@ import {
 } from "recharts";
 import { Gamepad2, Monitor, Tv, Clock, Activity } from "lucide-react";
 
-const PLATFORM_META: Record<string, { label: string; color: string }> = {
-  steam: { label: "Steam", color: "#2684FF" },
-  psn: { label: "PlayStation", color: "#0052CC" },
-  xbox: { label: "Xbox", color: "#36B37E" },
-  switch: { label: "Switch (CFW)", color: "#E5494A" },
-  switch2: { label: "Switch 2", color: "#E5494A" },
-  pc: { label: "PC", color: "#6554E0" },
+const PLATFORM_META: Record<string, { label: string; color: string; bg: string }> = {
+  steam: { label: "Steam", color: "#0052CC", bg: "#DEEBFF" },
+  psn: { label: "PlayStation", color: "#0747A6", bg: "#DEEBFF" },
+  xbox: { label: "Xbox", color: "#107C10", bg: "#E3FCEF" },
+  switch: { label: "Switch (CFW)", color: "#DE350B", bg: "#FFEBE6" },
+  switch2: { label: "Switch 2", color: "#DE350B", bg: "#FFEBE6" },
+  pc: { label: "PC", color: "#6554E0", bg: "#EAE6FF" },
 };
 
-const PIE_COLORS = ["#2684FF", "#36B37E", "#6554E0", "#E5494A", "#E97F0F", "#FFC400", "#4BADE8"];
+const PIE_COLORS = ["#0052CC", "#36B37E", "#6554E0", "#FF5630", "#FFAB00", "#FF8B00", "#4C9AFF"];
 
 export default function GamingPage() {
   const [sessions, setSessions] = useState<GamingSession[]>([]);
@@ -42,14 +42,19 @@ export default function GamingPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-6 py-4 border-b border-jira-border bg-jira-panel">
-        <div className="flex items-center gap-2 text-jira-textMuted text-xs">
-          <span>Insights</span><span>/</span><span className="text-jira-textSub">Gaming Activity</span>
+      <div className="px-6 py-3 border-b border-jira-border bg-white">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-jira-purpleBg flex items-center justify-center">
+            <Gamepad2 size={20} className="text-jira-purple" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-jira-text">Gaming Activity</h1>
+            <div className="text-xs text-jira-textMuted">Auto-tracked gaming sessions across all platforms</div>
+          </div>
         </div>
-        <h1 className="text-xl font-bold text-jira-text mt-1">Gaming Activity</h1>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-6 space-y-6 bg-jira-app">
         {activeSessions.length > 0 && (
           <div className="space-y-2">
             {activeSessions.map((s) => {
