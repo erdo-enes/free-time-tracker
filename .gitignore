@@ -55,3 +55,15 @@ switch-collector/*.elf
 switch-collector/*.nacp
 *.o
 *.a
+
+# Docker
+docker-compose.override.yml
+
+# Next.js standalone
+frontend/.next/standalone/
+
+# Public placeholder
+!frontend/public/
+
+# Root env
+.env

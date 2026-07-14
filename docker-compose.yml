@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ftj-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/app/data
+    environment:
+      - FREETIME_DATABASE_URL=sqlite:///data/freetime.db
+      - FREETIME_STEAM_API_KEY=${FREETIME_STEAM_API_KEY:-}
+      - FREETIME_STEAM_STEAMID=${FREETIME_STEAM_STEAMID:-}
+      - FREETIME_PSN_NPSSO_TOKEN=${FREETIME_PSN_NPSSO_TOKEN:-}
+      - FREETIME_XBOX_OPENXBL_KEY=${FREETIME_XBOX_OPENXBL_KEY:-}
+      - FREETIME_SWITCH2_NSO_TOKEN=${FREETIME_SWITCH2_NSO_TOKEN:-}
+      - FREETIME_TRACKER_POLL_INTERVAL_SECONDS=${FREETIME_TRACKER_POLL_INTERVAL_SECONDS:-300}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ftj-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-data:
